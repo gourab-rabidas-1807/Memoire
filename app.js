@@ -86,11 +86,15 @@ loginForm.addEventListener("submit", async (event) => {
 
     loginError.textContent = "";
 
-    loginScreen.classList.add("hidden");
+loginScreen.classList.add("hidden");
+loginScreen.style.display = "none";
 
-    galleryScreen.classList.remove("hidden");
+galleryScreen.classList.remove("hidden");
+galleryScreen.style.display = "block";
 
-    loadPhotos().catch((error) => {
+loginError.textContent = "";
+
+loadPhotos().catch((error) => {
   console.error("Photo loading error:", error);
 });
 
