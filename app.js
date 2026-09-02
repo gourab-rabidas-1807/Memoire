@@ -90,7 +90,9 @@ loginForm.addEventListener("submit", async (event) => {
 
     galleryScreen.classList.remove("hidden");
 
-    await loadPhotos();
+    loadPhotos().catch((error) => {
+  console.error("Photo loading error:", error);
+});
 
 });
 
