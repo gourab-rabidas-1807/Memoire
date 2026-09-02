@@ -1,12 +1,16 @@
-// ============================================
+// ======================================================
 // MÉMOIRE — PRIVATE PHOTO GALLERY
-// ============================================
+// ======================================================
+
+// ------------------------------------------------------
+// ELEMENTS
+// ------------------------------------------------------
 
 const loginScreen = document.getElementById("loginScreen");
 const galleryScreen = document.getElementById("galleryScreen");
 
 const loginForm = document.getElementById("loginForm");
-const passwordInput = document.getElementById("password");
+const passwordInput = document.getElementById("passwordInput");
 const loginError = document.getElementById("loginError");
 
 const showPassword = document.getElementById("showPassword");
@@ -24,391 +28,449 @@ const closeViewer = document.getElementById("closeViewer");
 const toast = document.getElementById("toast");
 
 
-// ============================================
+// ------------------------------------------------------
 // PASSWORD SHOW / HIDE
-// ============================================
+// ------------------------------------------------------
 
-showPassword.addEventListener("click", () => {
+if (showPassword) {
+    showPassword.addEventListener("click", () => {
 
-    if (passwordInput.type === "password") {
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            showPassword.textContent = "●";
+        } else {
+            passwordInput.type = "password";
+            showPassword.textContent = "○";
+        }
 
-        passwordInput.type = "text";
-        showPassword.textContent = "●";
+    });
+}
 
-    } else {
 
-        passwordInput.type = "password";
-        showPassword.textContent = "○";
+// ------------------------------------------------------
+// TOAST
+// ------------------------------------------------------
 
+function showToast(message) {
+
+    if (!toast) {
+        alert(message);
+        return;
     }
 
-});
+    toast.textContent = message;
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
+}
 
 
-// ============================================
+// ------------------------------------------------------
 // LOGIN
-// ============================================
+// ------------------------------------------------------
 
-loginForm.addEventListener("submit", async (event) => {
+if (loginForm) {
 
-    event.preventDefault();
+    loginForm.addEventListener("submit", async (event) => {
 
-    loginError.textContent = "";
+        event.preventDefault();
 
-    const password = passwordInput.value;
+        loginError.textContent = "";
 
-    if (!password) {
-        return;
-    }
+        const password = passwordInput.value.trim();
 
-    loginError.textContent = "Opening MÉMOIRE…";
+        if (!password) {
+            loginError.textContent = "Please enter your password.";
+            return;
+        }
 
-    const { error } =
-        await supabaseClient.auth.signInWithPassword({
-            email: PRIVATE_EMAIL,
-            password: password
-        });
+        loginError.textContent = "Opening MÉMOIRE…";
 
+        try {
 
-    if (error) {
+            const { data, error } =
+                await supabaseClient.auth.signInWithPassword({
+                    email: PRIVATE_EMAIL,
+                    password: password
+                });
 
-        console.error(error);
+            if (error) {
+                console.error("LOGIN ERROR:", error);
 
-        loginError.textContent = error?.message || "Login failed.";
+                loginError.textContent =
+                    error.message || "Incorrect password.";
 
-        passwordInput.value = "";
-
-        return;
-    }
-
-
-    passwordInput.value = "";
-
-    loginError.textContent = "";
-
-loginScreen.classList.add("hidden");
-loginScreen.style.display = "none";
-
-galleryScreen.classList.remove("hidden");
-galleryScreen.style.display = "block";
-
-loginError.textContent = "";
-
-loadPhotos().catch((error) => {
-  console.error("Photo loading error:", error);
-});
-
-});
-
-
-// ============================================
-// LOGOUT / LOCK
-// ============================================
-
-logoutButton.addEventListener("click", async () => {
-
-    await supabaseClient.auth.signOut();
-
-    galleryScreen.classList.add("hidden");
-
-    loginScreen.classList.remove("hidden");
-
-    passwordInput.value = "";
-
-});
-
-
-// ============================================
-// LOAD PHOTOS
-// ============================================
-
-async function loadPhotos() {
-
-    gallery.innerHTML = "";
-
-    const {
-        data,
-        error
-    } = await supabaseClient.storage
-        .from("photos")
-        .list("", {
-            limit: 1000,
-            sortBy: {
-                column: "created_at",
-                order: "desc"
+                return;
             }
-        });
 
+            console.log("LOGIN SUCCESS:", data);
 
-    if (error) {
+            passwordInput.value = "";
+            loginError.textContent = "";
 
-        console.error(error);
+            loginScreen.classList.add("hidden");
+            galleryScreen.classList.remove("hidden");
 
-        showToast("Unable to load memories.");
+            await loadPhotos();
 
-        return;
-    }
+        } catch (err) {
 
+            console.error("LOGIN EXCEPTION:", err);
 
-    const photos =
-        (data || []).filter(file => file.name);
+            loginError.textContent =
+                "Something went wrong. Please try again.";
 
+        }
 
-    if (photos.length === 0) {
-
-        emptyState.style.display = "block";
-
-        return;
-    }
-
-
-    emptyState.style.display = "none";
-
-
-    for (const file of photos) {
-
-        await createPhotoCard(file);
-
-    }
+    });
 
 }
 
 
-// ============================================
-// CREATE PHOTO CARD
-// ============================================
+// ------------------------------------------------------
+// LOAD PHOTOS
+// ------------------------------------------------------
 
-async function createPhotoCard(file) {
+async function loadPhotos() {
 
-    const {
-        data,
-        error
-    } = await supabaseClient.storage
-        .from("photos")
-        .createSignedUrl(
-            file.name,
-            60 * 60
-        );
+    console.log("Loading photos...");
 
+    gallery.innerHTML = "";
 
-    if (error || !data?.signedUrl) {
+    try {
 
-        console.error(error);
+        const { data: files, error } =
+            await supabaseClient.storage
+                .from("photos")
+                .list("", {
+                    limit: 100,
+                    sortBy: {
+                        column: "created_at",
+                        order: "desc"
+                    }
+                });
 
-        return;
+        if (error) {
+            console.error("LOAD PHOTOS ERROR:", error);
+            showToast(error.message);
+            return;
+        }
+
+        console.log("FILES FOUND:", files);
+
+        if (!files || files.length === 0) {
+
+            if (emptyState) {
+                emptyState.style.display = "block";
+            }
+
+            return;
+        }
+
+        if (emptyState) {
+            emptyState.style.display = "none";
+        }
+
+        for (const file of files) {
+
+            if (!file.name) continue;
+
+            const { data: signedData, error: signedError } =
+                await supabaseClient.storage
+                    .from("photos")
+                    .createSignedUrl(file.name, 3600);
+
+            if (signedError) {
+                console.error(
+                    "SIGNED URL ERROR:",
+                    signedError
+                );
+                continue;
+            }
+
+            if (!signedData?.signedUrl) continue;
+
+            createPhotoCard(
+                signedData.signedUrl,
+                file.name
+            );
+        }
+
+    } catch (err) {
+
+        console.error("LOAD EXCEPTION:", err);
+        showToast("Unable to load photos.");
+
     }
+}
 
 
-    const card =
-        document.createElement("article");
+// ------------------------------------------------------
+// CREATE PHOTO CARD
+// ------------------------------------------------------
+
+function createPhotoCard(url, name) {
+
+    const card = document.createElement("div");
 
     card.className = "photo-card";
 
+    const image = document.createElement("img");
 
-    const image =
-        document.createElement("img");
-
-    image.src = data.signedUrl;
-
-    image.alt = "Memory";
-
+    image.src = url;
+    image.alt = "MÉMOIRE memory";
     image.loading = "lazy";
 
+    card.appendChild(image);
 
-    image.addEventListener("click", () => {
+    card.addEventListener("click", () => {
 
-        viewerImage.src =
-            data.signedUrl;
+        viewerImage.src = url;
 
-        viewerName.textContent =
-            file.name;
+        if (viewerName) {
+            viewerName.textContent = name;
+        }
 
         photoViewer.classList.remove("hidden");
 
     });
 
-
-    card.appendChild(image);
-
     gallery.appendChild(card);
-
 }
 
 
-// ============================================
-// CLOSE PHOTO VIEWER
-// ============================================
-
-closeViewer.addEventListener("click", closePhotoViewer);
-
-
-photoViewer.addEventListener("click", (event) => {
-
-    if (event.target === photoViewer) {
-
-        closePhotoViewer();
-
-    }
-
-});
-
-
-function closePhotoViewer() {
-
-    photoViewer.classList.add("hidden");
-
-    viewerImage.src = "";
-
-}
-
-
-// ============================================
+// ------------------------------------------------------
 // UPLOAD PHOTOS
-// ============================================
+// ------------------------------------------------------
 
-photoInput.addEventListener("change", async () => {
+if (photoInput) {
 
-    const files =
-        Array.from(photoInput.files || []);
+    photoInput.addEventListener("change", async () => {
 
+        console.log("PHOTO INPUT CHANGED");
 
-    if (files.length === 0) {
-        return;
-    }
+        const files = Array.from(photoInput.files || []);
 
+        console.log("SELECTED FILES:", files);
 
-    showToast("Saving your memories…");
-
-
-    let successful = 0;
-
-
-    for (const file of files) {
-
-        /*
-         * Maximum size:
-         * 50 MB per file with the current
-         * Supabase Storage configuration.
-         */
-
-        if (file.size > 50 * 1024 * 1024) {
-
-            showToast(
-                `${file.name} is larger than 50 MB.`
-            );
-
-            continue;
+        if (files.length === 0) {
+            console.log("No files selected.");
+            return;
         }
 
+        showToast("Uploading memories…");
 
-        const extension =
-            file.name.includes(".")
-                ? file.name.substring(
-                    file.name.lastIndexOf(".")
-                  )
-                : "";
+        let successful = 0;
 
+        for (const file of files) {
 
-        const filename =
-            `${Date.now()}-${crypto.randomUUID()}${extension}`;
+            console.log("Uploading:", file.name);
 
+            // Maximum 50 MB
+            if (file.size > 50 * 1024 * 1024) {
 
-const filePath = `${Date.now()}-${crypto.randomUUID()}${extension}`;
+                showToast(
+                    `${file.name} is larger than 50 MB.`
+                );
 
-const { data, error } = await supabaseClient.storage
-    .from("photos")
-    .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: file.type
+                continue;
+            }
+
+            // Only images
+            if (!file.type.startsWith("image/")) {
+
+                showToast(
+                    `${file.name} is not an image.`
+                );
+
+                continue;
+            }
+
+            const extension =
+                file.name.includes(".")
+                    ? file.name.substring(
+                        file.name.lastIndexOf(".")
+                    )
+                    : "";
+
+            const filename =
+                `${Date.now()}-${crypto.randomUUID()}${extension}`;
+
+            console.log("NEW FILE NAME:", filename);
+
+            try {
+
+                const { data, error } =
+                    await supabaseClient.storage
+                        .from("photos")
+                        .upload(
+                            filename,
+                            file,
+                            {
+                                cacheControl: "3600",
+                                upsert: false,
+                                contentType: file.type
+                            }
+                        );
+
+                console.log("UPLOAD RESULT:", data);
+                console.log("UPLOAD ERROR:", error);
+
+                if (error) {
+
+                    console.error(
+                        "UPLOAD FAILED:",
+                        error
+                    );
+
+                    showToast(
+                        "Upload failed: " + error.message
+                    );
+
+                    continue;
+                }
+
+                successful++;
+
+            } catch (err) {
+
+                console.error(
+                    "UPLOAD EXCEPTION:",
+                    err
+                );
+
+                showToast(
+                    "Upload error: " + err.message
+                );
+            }
+        }
+
+        // Clear selected files
+        photoInput.value = "";
+
+        // Reload gallery
+        await loadPhotos();
+
+        if (successful > 0) {
+
+            showToast(
+                `${successful} memory${
+                    successful > 1 ? "ies" : ""
+                } uploaded successfully.`
+            );
+
+        } else {
+
+            showToast(
+                "No photos were uploaded."
+            );
+        }
+
     });
 
-if (error) {
-    console.error("UPLOAD ERROR:", error);
-    showToast("Upload failed: " + error.message);
-    continue;
 }
 
-console.log("Uploaded:", data);
-successful++;
 
-    }
+// ------------------------------------------------------
+// FULLSCREEN VIEWER
+// ------------------------------------------------------
 
+if (closeViewer) {
 
-    photoInput.value = "";
+    closeViewer.addEventListener("click", () => {
 
+        photoViewer.classList.add("hidden");
 
-    await loadPhotos();
+        viewerImage.src = "";
 
-
-    if (successful > 0) {
-
-        showToast(
-            `${successful} memory${successful > 1 ? "ies" : ""} saved ✦`
-        );
-
-    } else {
-
-        showToast(
-            "No photos were uploaded."
-        );
-
-    }
-
-});
-
-
-// ============================================
-// TOAST
-// ============================================
-
-let toastTimer;
-
-
-function showToast(message) {
-
-    toast.textContent = message;
-
-    toast.classList.add("show");
-
-
-    clearTimeout(toastTimer);
-
-
-    toastTimer =
-        setTimeout(() => {
-
-            toast.classList.remove("show");
-
-        }, 3000);
+    });
 
 }
 
 
-// ============================================
+if (photoViewer) {
+
+    photoViewer.addEventListener("click", (event) => {
+
+        if (event.target === photoViewer) {
+
+            photoViewer.classList.add("hidden");
+
+            viewerImage.src = "";
+
+        }
+
+    });
+
+}
+
+
+// ------------------------------------------------------
+// LOGOUT / LOCK
+// ------------------------------------------------------
+
+if (logoutButton) {
+
+    logoutButton.addEventListener("click", async () => {
+
+        await supabaseClient.auth.signOut();
+
+        gallery.innerHTML = "";
+
+        galleryScreen.classList.add("hidden");
+        loginScreen.classList.remove("hidden");
+
+        passwordInput.value = "";
+
+        showToast("MÉMOIRE locked.");
+
+    });
+
+}
+
+
+// ------------------------------------------------------
 // CHECK EXISTING SESSION
-// ============================================
+// ------------------------------------------------------
 
 async function checkSession() {
 
-    const {
-        data: {
-            session
+    try {
+
+        const {
+            data: { session }
+        } = await supabaseClient.auth.getSession();
+
+        if (session) {
+
+            loginScreen.classList.add("hidden");
+            galleryScreen.classList.remove("hidden");
+
+            await loadPhotos();
+
+        } else {
+
+            loginScreen.classList.remove("hidden");
+            galleryScreen.classList.add("hidden");
+
         }
-    } = await supabaseClient.auth.getSession();
 
+    } catch (err) {
 
-    if (session) {
-
-        loginScreen.classList.add("hidden");
-
-        galleryScreen.classList.remove("hidden");
-
-        await loadPhotos();
+        console.error(
+            "SESSION ERROR:",
+            err
+        );
 
     }
 
 }
 
+
+// ------------------------------------------------------
+// START
+// ------------------------------------------------------
 
 checkSession();
