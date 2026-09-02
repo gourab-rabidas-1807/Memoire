@@ -74,8 +74,7 @@ loginForm.addEventListener("submit", async (event) => {
 
         console.error(error);
 
-        loginError.textContent =
-            "Incorrect password.";
+        loginError.textContent = error?.message || "Login failed.";
 
         passwordInput.value = "";
 
