@@ -1,17 +1,260 @@
-create policy "Memoire can view photos"
-on storage.objects
-for select
-to authenticated
-using (bucket_id = 'photos');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f6f1ed">
 
-create policy "Memoire can upload photos"
-on storage.objects
-for insert
-to authenticated
-with check (bucket_id = 'photos');
+  <title>MÉMOIRE — Private Collection</title>
 
-create policy "Memoire can delete photos"
-on storage.objects
-for delete
-to authenticated
-using (bucket_id = 'photos');
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <!-- ================= LOGIN ================= -->
+
+  <main id="loginScreen" class="login-screen">
+
+    <div class="login-card">
+
+      <div class="brand">
+        <span class="brand-small">PRIVATE COLLECTION</span>
+
+        <h1>MÉMOIRE</h1>
+
+        <p>A quiet place for beautiful memories.</p>
+      </div>
+
+      <div class="lock-icon">
+        ♢
+      </div>
+
+      <form id="loginForm">
+
+        <label for="password">
+          Enter password
+        </label>
+
+        <div class="password-box">
+
+          <input
+            id="password"
+            type="password"
+            placeholder="Your private password"
+            autocomplete="current-password"
+            required
+          >
+
+          <button
+            type="button"
+            id="showPassword"
+            aria-label="Show password"
+          >
+            ○
+          </button>
+
+        </div>
+
+        <button
+          type="submit"
+          class="enter-button"
+        >
+          <span>Enter MÉMOIRE</span>
+          <span>→</span>
+        </button>
+
+        <p id="loginError" class="error-message"></p>
+
+      </form>
+
+      <div class="login-footer">
+        <span>PRIVATE</span>
+        <span>•</span>
+        <span>PERSONAL</span>
+        <span>•</span>
+        <span>MEMORIES</span>
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- ================= GALLERY ================= -->
+
+  <main id="galleryScreen" class="gallery-screen hidden">
+
+    <header class="gallery-header">
+
+      <div>
+        <span class="brand-small">
+          PRIVATE COLLECTION
+        </span>
+
+        <h1>MÉMOIRE</h1>
+      </div>
+
+      <button
+        id="logoutButton"
+        class="logout-button"
+      >
+        Lock
+      </button>
+
+    </header>
+
+
+    <section class="welcome-section">
+
+      <p class="eyebrow">
+        YOUR PRIVATE ARCHIVE
+      </p>
+
+      <h2>
+        Little moments,<br>
+        <em>kept quietly.</em>
+      </h2>
+
+      <p class="description">
+        A personal collection of memories worth keeping.
+      </p>
+
+    </section>
+
+
+    <section class="gallery-actions">
+
+      <label class="upload-button">
+
+        <input
+          type="file"
+          id="photoInput"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+        >
+
+        <span>＋ Add memories</span>
+
+      </label>
+
+    </section>
+
+
+    <!-- PHOTO GALLERY -->
+
+    <section
+      id="gallery"
+      class="photo-grid"
+    ></section>
+
+
+    <!-- EMPTY GALLERY -->
+
+    <div
+      id="emptyState"
+      class="empty-state"
+    >
+
+      <div class="empty-symbol">
+        ✦
+      </div>
+
+      <h3>
+        Your memories are waiting.
+      </h3>
+
+      <p>
+        Add your first photograph to begin your collection.
+      </p>
+
+    </div>
+
+  </main>
+
+
+  <!-- ================= PHOTO VIEWER ================= -->
+
+  <div
+    id="photoViewer"
+    class="photo-viewer hidden"
+  >
+
+    <button
+      id="closeViewer"
+      class="close-viewer"
+      aria-label="Close"
+    >
+      ×
+    </button>
+
+    <img
+      id="viewerImage"
+      src=""
+      alt="Memory"
+    >
+
+    <div class="viewer-caption">
+      <span id="viewerName"></span>
+    </div>
+
+  </div>
+
+
+  <!-- ================= NOTIFICATION ================= -->
+
+  <div
+    id="toast"
+    class="toast"
+  ></div>
+
+
+  <!-- ================= SUPABASE CONFIG ================= -->
+
+  <script>
+
+    /*
+     * MÉMOIRE CONFIGURATION
+     *
+     * IMPORTANT:
+     * Use ONLY the Supabase Project URL
+     * and Publishable/anon key.
+     *
+     * NEVER put the Supabase SECRET key here.
+     */
+
+    const SUPABASE_URL =
+      "YOUR_SUPABASE_PROJECT_URL";
+
+    const SUPABASE_PUBLISHABLE_KEY =
+      "YOUR_SUPABASE_PUBLISHABLE_KEY";
+
+
+    const supabaseClient =
+      supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+      );
+
+
+    /*
+     * The email belongs to the single
+     * Supabase user you created.
+     *
+     * Visitors will NOT see this email.
+     */
+
+    const PRIVATE_EMAIL =
+      "YOUR_LOGIN_EMAIL";
+
+  </script>
+
+
+  <!-- MÉMOIRE APPLICATION -->
+
+  <script src="app.js"></script>
+
+</body>
+            </html>
