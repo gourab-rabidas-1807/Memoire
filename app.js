@@ -313,29 +313,24 @@ photoInput.addEventListener("change", async () => {
             `${Date.now()}-${crypto.randomUUID()}${extension}`;
 
 
-        const {
-            error
-        } = await supabaseClient.storage
-            .from("photos")
-            .upload(
-                filename,
-                file,
-                {
-                    cacheControl: "3600",
-                    upsert: false
-                }
-            );
+const filePath = `${Date.now()}-${crypto.randomUUID()}${extension}`;
 
+const { data, error } = await supabaseClient.storage
+    .from("photos")
+    .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type
+    });
 
-        if (error) {
+if (error) {
+    console.error("UPLOAD ERROR:", error);
+    showToast("Upload failed: " + error.message);
+    continue;
+}
 
-            console.error(error);
-
-            continue;
-        }
-
-
-        successful++;
+console.log("Uploaded:", data);
+successful++;
 
     }
 
